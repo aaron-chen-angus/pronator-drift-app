@@ -1,0 +1,262 @@
+/**
+ * Accessibility Styles — Global focus indicators, reduced motion support,
+ * skip navigation, touch targets, and multi-indicator status patterns.
+ *
+ * Requirements: 21.1, 21.2, 21.3, 21.4, 21.5, 21.6, 21.7, 21.8
+ *
+ * Focus indicator: 2-3px solid cyan outline with 2px offset (3:1 contrast against dark background).
+ * Reduced motion: @media (prefers-reduced-motion: reduce) disables transitions and animations.
+ * Touch targets: minimum 44x44 CSS pixels on viewports ≤768px.
+ * Status indicators: text + shape/pattern/icon, not color alone.
+ */
+
+/* ─── Skip to Content Link ──────────────────────────────────────────── */
+
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: var(--spacing-md);
+  z-index: 10000;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-accent-cyan);
+  color: var(--color-bg-primary);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  border-radius: var(--border-radius-sm);
+  transition: top var(--transition-fast);
+}
+
+.skip-to-content:focus {
+  top: var(--spacing-md);
+  outline: 3px solid var(--color-accent-cyan);
+  outline-offset: 2px;
+}
+
+/* ─── Focus Indicators (3:1 contrast against dark background) ───────── */
+
+/*
+ * Override default browser focus to provide visible, high-contrast focus ring.
+ * Cyan (#00e5ff) on dark navy (#0a0e17) provides >3:1 contrast ratio.
+ */
+:focus-visible {
+  outline: 2px solid var(--color-accent-cyan);
+  outline-offset: 2px;
+  border-radius: var(--border-radius-sm);
+}
+
+/* Enhanced focus for buttons and interactive controls */
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--color-accent-cyan);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.2);
+}
+
+/* Focus indicator for checkboxes and radio inputs */
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 3px solid var(--color-accent-cyan);
+  outline-offset: 3px;
+}
+
+/* Focus within for custom checkbox/radio containers */
+.checkbox-container:focus-within,
+.radio-container:focus-within {
+  outline: 2px solid var(--color-accent-cyan);
+  outline-offset: 2px;
+  border-radius: var(--border-radius-sm);
+}
+
+/* ─── Keyboard Navigation Enhancements ──────────────────────────────── */
+
+/* Ensure interactive elements have proper cursor */
+button,
+[role="button"],
+a,
+input,
+select,
+textarea,
+[tabindex="0"] {
+  cursor: pointer;
+}
+
+/* Disabled state — no pointer and reduced opacity */
+button:disabled,
+[role="button"][aria-disabled="true"],
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ─── Touch Targets (44x44 minimum on mobile viewports ≤768px) ────── */
+
+@media (max-width: 768px) {
+  button,
+  [role="button"],
+  a,
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="range"],
+  select {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Ensure checkbox/radio labels have adequate touch area */
+  label {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) 0;
+  }
+}
+
+/* ─── Reduced Motion Support ────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Remove decorative motion effects */
+  .app::before {
+    animation: none !important;
+  }
+
+  /* Skip-to-content link: instant position, no transition */
+  .skip-to-content {
+    transition: none;
+  }
+
+  /* Disable spinner/pulse/glow animations */
+  @keyframes pulse {
+    from, to { opacity: 1; }
+  }
+
+  @keyframes spin {
+    from, to { transform: none; }
+  }
+
+  @keyframes glow {
+    from, to { box-shadow: none; }
+  }
+}
+
+/* ─── ARIA Live Region Styling ──────────────────────────────────────── */
+
+/* Visually hidden but accessible to screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Live region containers — ensure they exist in DOM before content changes */
+[aria-live="polite"],
+[aria-live="assertive"] {
+  /* Ensure live regions are rendered even when empty */
+  min-height: 1px;
+}
+
+/* ─── Multi-Indicator Status Patterns ───────────────────────────────── */
+
+/*
+ * Status must be conveyed by two or more indicators (text + shape/pattern/icon),
+ * never by color alone. These utility classes provide shape indicators.
+ */
+
+/* Status indicators with icons */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.status-indicator::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.status-indicator--success::before {
+  /* Circle shape for success */
+  border-radius: 50%;
+  background-color: var(--color-success);
+}
+
+.status-indicator--warning::before {
+  /* Triangle shape for warning */
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 12px solid var(--color-warning);
+  background-color: transparent;
+  border-radius: 0;
+}
+
+.status-indicator--error::before {
+  /* Square shape for error */
+  border-radius: 0;
+  background-color: var(--color-error);
+}
+
+.status-indicator--info::before {
+  /* Diamond shape for info */
+  width: 10px;
+  height: 10px;
+  background-color: var(--color-accent-cyan);
+  transform: rotate(45deg);
+  border-radius: 0;
+}
+
+/* ─── Focus Trap Helper ─────────────────────────────────────────────── */
+
+/*
+ * Focus trap container — prevents tab-cycling out of modal dialogs.
+ * JavaScript handles the actual trap logic; this provides visual boundary.
+ */
+.focus-trap {
+  position: relative;
+  isolation: isolate;
+}
+
+.focus-trap[aria-modal="true"] {
+  z-index: 1000;
+}
+
+/* ─── Screen Transition Focus Target ────────────────────────────────── */
+
+/*
+ * Headings that receive programmatic focus on screen transitions.
+ * outline: none removes visible outline for programmatic (non-keyboard) focus.
+ */
+.screen-heading:focus {
+  outline: none;
+}
+
+.screen-heading:focus-visible {
+  outline: 3px solid var(--color-accent-cyan);
+  outline-offset: 2px;
+}

@@ -1,0 +1,160 @@
+/**
+ * FailureScreen styles
+ *
+ * Dark navy/near-black background with cyan/turquoise accents.
+ * Accessible, non-alarming visual design following the application's design system.
+ */
+
+.failure-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-md);
+  width: 100%;
+  max-width: 100%;
+  min-height: 300px;
+}
+
+/* ─── Waiting State ──────────────────────────────────────────────────── */
+
+.failure-screen__waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  text-align: center;
+}
+
+.failure-screen__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 229, 255, 0.2);
+  border-top-color: var(--color-accent-cyan);
+  border-radius: 50%;
+  animation: failure-spin 1s linear infinite;
+}
+
+@keyframes failure-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .failure-screen__spinner {
+    animation: none;
+    border-top-color: var(--color-accent-cyan);
+    opacity: 0.7;
+  }
+}
+
+.failure-screen__waiting-text {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.failure-screen__caption {
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+  font-style: italic;
+  max-width: 320px;
+  line-height: var(--line-height);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────── */
+
+.failure-screen__header {
+  text-align: center;
+}
+
+.failure-screen__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent-turquoise);
+  margin-bottom: var(--spacing-xs);
+}
+
+/* ─── Content ────────────────────────────────────────────────────────── */
+
+.failure-screen__content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background-color: var(--color-bg-surface);
+  border: var(--border-width) solid rgba(0, 229, 255, 0.2);
+  border-radius: var(--border-radius-lg);
+  width: 100%;
+  max-width: 360px;
+}
+
+.failure-screen__reason {
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+  line-height: var(--line-height);
+  font-weight: var(--font-weight-medium);
+}
+
+.failure-screen__instruction {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height);
+}
+
+/* ─── Actions ────────────────────────────────────────────────────────── */
+
+.failure-screen__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  width: 100%;
+  max-width: 320px;
+}
+
+.failure-screen__btn {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+  min-height: 44px;
+  border: var(--border-width) solid transparent;
+}
+
+.failure-screen__btn--primary {
+  background-color: var(--color-accent-cyan);
+  color: var(--color-bg-primary);
+  border-color: var(--color-accent-cyan);
+}
+
+.failure-screen__btn--primary:hover {
+  background-color: #33ecff;
+  border-color: #33ecff;
+}
+
+.failure-screen__btn--primary:active {
+  background-color: #00bcd4;
+  border-color: #00bcd4;
+}
+
+.failure-screen__btn--secondary {
+  background-color: transparent;
+  color: var(--color-accent-cyan);
+  border-color: var(--color-accent-cyan);
+}
+
+.failure-screen__btn--secondary:hover {
+  background-color: rgba(0, 229, 255, 0.1);
+}
+
+.failure-screen__btn--secondary:active {
+  background-color: rgba(0, 229, 255, 0.2);
+}

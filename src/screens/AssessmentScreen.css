@@ -1,0 +1,204 @@
+/**
+ * AssessmentScreen styles
+ *
+ * Dark navy/near-black background with cyan/turquoise accents.
+ * Large timer display, status text, caption area, and prominent stop button.
+ * Accessible: minimum 44x44px touch targets, high contrast, clear focus indicators.
+ */
+
+.assessment-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-xl) var(--spacing-md);
+  width: 100%;
+  max-width: 100%;
+  min-height: 400px;
+}
+
+/* ─── Timer Container ────────────────────────────────────────────────── */
+
+.assessment-screen__timer-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 3px solid var(--color-accent-cyan);
+  background-color: var(--color-bg-surface);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+}
+
+.assessment-screen__timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.assessment-screen__timer-value {
+  font-size: 64px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-accent-cyan);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.assessment-screen__timer-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-transform: lowercase;
+}
+
+/* ─── Status Text ────────────────────────────────────────────────────── */
+
+.assessment-screen__status {
+  text-align: center;
+  min-height: 28px;
+}
+
+.assessment-screen__status-text {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height);
+}
+
+/* ─── Captions ───────────────────────────────────────────────────────── */
+
+.assessment-screen__caption {
+  width: 100%;
+  max-width: 320px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: rgba(0, 229, 255, 0.08);
+  border-left: 3px solid var(--color-accent-cyan);
+  border-radius: var(--border-radius-sm);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.assessment-screen__caption-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height);
+  font-style: italic;
+}
+
+/* ─── Actions ────────────────────────────────────────────────────────── */
+
+.assessment-screen__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 320px;
+  margin-top: var(--spacing-lg);
+}
+
+.assessment-screen__btn {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+  min-height: 44px;
+  min-width: 44px;
+  border: var(--border-width) solid transparent;
+}
+
+/* Stop button: prominent, accessible */
+.assessment-screen__btn--stop {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border-color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.assessment-screen__btn--stop:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--color-text-secondary);
+}
+
+.assessment-screen__btn--stop:active {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-text-primary);
+}
+
+.assessment-screen__btn--stop:focus-visible {
+  outline: 2px solid var(--color-accent-cyan);
+  outline-offset: 2px;
+}
+
+/* Retry button */
+.assessment-screen__btn--retry {
+  background-color: var(--color-accent-cyan);
+  color: var(--color-bg-primary);
+  border-color: var(--color-accent-cyan);
+}
+
+.assessment-screen__btn--retry:hover {
+  background-color: #33ecff;
+  border-color: #33ecff;
+}
+
+.assessment-screen__btn--retry:active {
+  background-color: #00bcd4;
+  border-color: #00bcd4;
+}
+
+/* ─── Error State ────────────────────────────────────────────────────── */
+
+.assessment-screen--error {
+  justify-content: center;
+}
+
+.assessment-screen__error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
+  background-color: var(--color-bg-surface);
+  border: var(--border-width) solid rgba(255, 215, 64, 0.3);
+  border-radius: var(--border-radius-lg);
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+}
+
+.assessment-screen__error-icon {
+  font-size: 36px;
+  line-height: 1;
+  color: var(--color-warning);
+}
+
+.assessment-screen__error-message {
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+  line-height: var(--line-height);
+}
+
+/* ─── Responsive: Touch Targets ──────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .assessment-screen__btn {
+    min-height: 48px;
+    padding: var(--spacing-md) var(--spacing-xl);
+  }
+
+  .assessment-screen__timer-container {
+    width: 180px;
+    height: 180px;
+  }
+
+  .assessment-screen__timer-value {
+    font-size: 56px;
+  }
+}
