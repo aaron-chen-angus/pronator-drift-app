@@ -31,7 +31,7 @@ import type {
  * `VITE_SHEETS_WEBAPP_URL` environment variable at build time (preferred, so the
  * URL is not committed). The env var takes precedence when present.
  */
-const SHEETS_WEBAPP_URL_CONSTANT = '';
+const SHEETS_WEBAPP_URL_CONSTANT = 'https://script.google.com/macros/s/AKfycbwO9scBGtGIFf0EBi3Qx2MknCQ2G_eNYJSXIfh2uIeHs8QXgqeyeydO3NeNYYMxkoIT/exec';
 
 function resolveWebAppUrl(): string {
   // Vite exposes VITE_-prefixed env vars on import.meta.env (typed via
