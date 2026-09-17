@@ -60,7 +60,7 @@ have_stringr   <- requireNamespace("stringr",   quietly = TRUE)
 # ---- Data source -------------------------------------------------------------
 # Paste your published Sheet ID here (the token between /d/ and /edit in the URL).
 # The sheet must be shared as "Anyone with the link can view" for this CSV read.
-SHEET_ID  <- "PASTE_YOUR_SHEET_ID_HERE"
+SHEET_ID  <- "1OOmyyNWHg40keKS8rl8SQt7aQxwX14MdXsYQGiEVStQ"
 SHEET_TAB <- "Results"
 # gviz CSV endpoint returns the sheet's header row as column names.
 sheet_csv_url <- function(id, tab) {
@@ -189,15 +189,13 @@ pmax_safe <- function(a, b) {
   out
 }
 
-# Parse the sheet, coercing types and adding derived asymmetry columns.
-load_data <- function() {
-  url <- sheet_csv_url(SHEET_ID, SHEET_TAB)
-  df <- tryCatch(
-    utils::read.csv(url, check.names = FALSE, stringsAsFactors = FALSE),
-    error = function(e) NULL
-  )
-  if (is.null(df) || nrow(df) == 0) return(demo_data())
+# Set to TRUE to keep the 60 demo rows and APPEND the Google Sheet rows after
+# them. Set to FALSE to show ONLY the live sheet data.
+INCLUDE_DEMO_DATA <- TRUE
 
+# Coerce column types + add the derived asymmetry / time columns to a data frame
+# (works for both the sheet frame and the demo frame).
+derive_cols <- function(df) {
   num_cols <- c(COLS$age, COLS$duration, COLS$validPct, COLS$poseConf, COLS$camStab, COLS$fps,
                 COLS$L_maxDrift, COLS$L_onset, COLS$L_dur, COLS$L_pron, COLS$L_elbowFlex,
                 COLS$L_armTorso, COLS$L_wristTrem, COLS$L_fingTrem, COLS$L_freq, COLS$L_stab,
@@ -210,25 +208,79 @@ load_data <- function() {
                         COLS$R_possPron, COLS$outside, COLS$declaration), names(df))) {
     df[[c]] <- as_bool(df[[c]])
   }
-
-  # Derived: absolute L-R asymmetry on the core metrics.
-  saf <- function(col) if (col %in% names(df)) df[[col]] else NA_real_
+  saf <- function(col) if (col %in% names(df)) df[[col]] else rep(NA_real_, nrow(df))
   df$`Drift Asymmetry`     <- abs(saf(COLS$L_maxDrift) - saf(COLS$R_maxDrift))
   df$`Pronation Asymmetry` <- abs(saf(COLS$L_pron)     - saf(COLS$R_pron))
   df$`Stability Asymmetry` <- abs(saf(COLS$L_stab)     - saf(COLS$R_stab))
   df$`Max Drift (either)`  <- pmax_safe(saf(COLS$L_maxDrift), saf(COLS$R_maxDrift))
-
-  # Parse a POSIXct test time when possible.
   if (COLS$testTime %in% names(df)) {
-    df$`.testTime` <- tryCatch(as.POSIXct(df[[COLS$testTime]], tz = "UTC",
-                                          format = "%Y-%m-%dT%H:%M:%OSZ"),
-                               error = function(e) as.POSIXct(NA))
-    if (all(is.na(df$`.testTime`))) {
-      df$`.testTime` <- suppressWarnings(as.POSIXct(df[[COLS$testTime]]))
-    }
+    tt <- tryCatch(as.POSIXct(df[[COLS$testTime]], tz = "UTC",
+                              format = "%Y-%m-%dT%H:%M:%OSZ"),
+                   error = function(e) as.POSIXct(rep(NA, nrow(df))))
+    if (all(is.na(tt))) tt <- suppressWarnings(as.POSIXct(df[[COLS$testTime]]))
+    df$`.testTime` <- tt
   }
   df
 }
+
+# Read only the live Google Sheet. Returns a list(df=, err=, url=) so the UI can
+# report exactly why a read failed instead of silently falling back to demo.
+read_sheet <- function() {
+  if (identical(SHEET_ID, "PASTE_YOUR_SHEET_ID_HERE") || !nzchar(SHEET_ID)) {
+    return(list(df = NULL, err = "SHEET_ID is not set.", url = NA))
+  }
+  url <- sheet_csv_url(SHEET_ID, SHEET_TAB)
+  df <- tryCatch(
+    utils::read.csv(url, check.names = FALSE, stringsAsFactors = FALSE),
+    error = function(e) e
+  )
+  if (inherits(df, "error")) {
+    return(list(df = NULL, err = conditionMessage(df), url = url))
+  }
+  if (is.null(df) || nrow(df) == 0) {
+    return(list(df = NULL, err = "Sheet read returned 0 rows (is the tab name correct and shared publicly?).", url = url))
+  }
+  list(df = df, err = NULL, url = url)
+}
+
+# Combine sources per INCLUDE_DEMO_DATA and tag rows with a ".source" column so
+# the UI can show what is loaded. Demo rows come first; sheet rows are appended.
+load_data <- function() {
+  res   <- read_sheet()
+  sheet <- res$df
+
+  if (INCLUDE_DEMO_DATA) {
+    demo <- demo_data(); demo$`.source` <- "Demo"
+    if (is.null(sheet)) {
+      out <- demo
+      attr(out, "state") <- "demo_only"
+    } else {
+      live <- derive_cols(sheet); live$`.source` <- "Live"
+      # Align columns: keep the union, fill missing with NA, demo first.
+      allcols <- union(names(demo), names(live))
+      for (c in setdiff(allcols, names(demo))) demo[[c]] <- NA
+      for (c in setdiff(allcols, names(live))) live[[c]] <- NA
+      out <- rbind(demo[, allcols], live[, allcols])
+      attr(out, "state") <- "demo_plus_live"
+      attr(out, "n_live") <- nrow(live)
+    }
+  } else {
+    if (is.null(sheet)) {
+      out <- demo_data(); out$`.source` <- "Demo"
+      attr(out, "state") <- "demo_fallback"
+    } else {
+      out <- derive_cols(sheet); out$`.source` <- "Live"
+      attr(out, "state") <- "live_only"
+      attr(out, "n_live") <- nrow(out)
+    }
+  }
+  attr(out, "sheet_err") <- res$err
+  attr(out, "sheet_url") <- res$url
+  out
+}
+
+# Null-coalescing helper used by the banner.
+`%||%` <- function(a, b) if (is.null(a) || length(a) == 0) b else a
 
 # A small, realistic demo dataset so the dashboard renders before the sheet is
 # configured (and during shinyapps.io preview).
@@ -359,6 +411,7 @@ ui <- navbarPage(
 
   # ---- Overview -------------------------------------------------------------
   tabPanel("Overview",
+    uiOutput("dataBanner"),
     fluidRow(
       column(2, kpi("kpiN", "Assessments")),
       column(2, kpi("kpiPeople", "Participants")),
@@ -527,6 +580,29 @@ server <- function(input, output, session) {
     valueFunc = function() load_data())
 
   num <- function(df, key) if (key %in% names(df)) df[[key]] else rep(NA_real_, nrow(df))
+
+  # Status banner: makes it obvious whether live sheet data is loaded.
+  output$dataBanner <- renderUI({
+    d <- data(); st <- attr(d, "state"); nlive <- attr(d, "n_live")
+    err <- attr(d, "sheet_err"); surl <- attr(d, "sheet_url")
+    msg <- switch(st %||% "",
+      "demo_plus_live"  = sprintf("Showing 60 demo rows + %d live row(s) from your Google Sheet.", nlive %||% 0),
+      "live_only"       = sprintf("Showing %d live row(s) from your Google Sheet.", nlive %||% 0),
+      "demo_only"       = "Showing demo data only — the Google Sheet could not be read.",
+      "demo_fallback"   = "Showing demo data only — the Google Sheet could not be read.",
+      "Loading…")
+    is_demo_only <- st %in% c("demo_only", "demo_fallback")
+    div(style = sprintf("background:%s;border-left:4px solid %s;border-radius:8px;padding:10px 14px;margin:6px 0;color:%s;",
+                        PAL$surface, if (is_demo_only) PAL$warn else PAL$good, PAL$ink),
+        tags$b(if (is_demo_only) "⚠ " else "● "), msg,
+        if (is_demo_only && !is.null(err))
+          tags$div(style = sprintf("margin-top:6px;color:%s;font-size:.85rem;", PAL$muted),
+                   tags$div(tags$b("Reason: "), err),
+                   if (!is.na(surl)) tags$div(tags$b("Tried to read: "),
+                     tags$a(href = surl, target = "_blank", "open this URL in a new tab")),
+                   tags$div("Fix: in Google Sheets → Share → General access → 'Anyone with the link' → Viewer, and confirm the tab is named exactly 'Results'."))
+    )
+  })
 
   # ---- KPIs ----
   output$kpiN       <- renderText(nrow(data()))

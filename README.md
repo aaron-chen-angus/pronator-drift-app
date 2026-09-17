@@ -6,6 +6,27 @@
 
 ---
 
+## Live Deployment & Resources
+
+This project is part of the **SMILE** initiative (*Smart Monitoring for
+Individualised Living and Engagement*). The screening application, the aggregated
+research dataset, and the analytics dashboard are all publicly accessible:
+
+| Resource | Link | Purpose |
+|---|---|---|
+| **Screening web app** (GitHub Pages) | <https://aaron-chen-angus.github.io/pronator-drift-app/> | Run the camera-based pronator-drift screening in any modern browser. |
+| **Source repository** | <https://github.com/aaron-chen-angus/pronator-drift-app> | Full source, build workflow, and documentation. |
+| **Aggregate results dataset** (Google Sheets) | <https://docs.google.com/spreadsheets/d/1OOmyyNWHg40keKS8rl8SQt7aQxwX14MdXsYQGiEVStQ> | De-identified per-assessment records: participant intake + every computed metric (see §5, §14). |
+| **Analytics & education dashboard** (R Shiny) | <https://smile-rp.shinyapps.io/SMILE-PronatorDrift/> | Interactive, educational visual analysis of the aggregate dataset (see §17). |
+
+> **Data-governance note.** The Google Sheet and Shiny dashboard receive result
+> values and participant intake fields **only** for sessions where the on-screen
+> declaration/consent was accepted (see §7, §14). No video or raw landmark data
+> is ever transmitted or stored. Operators are responsible for complying with
+> their institution's ethics, consent, and data-protection requirements.
+
+---
+
 ## Table of Contents
 
 1. [Abstract](#1-abstract)
@@ -24,6 +45,10 @@
 14. [Integrating Live Results with Google Sheets](#14-integrating-live-results-with-google-sheets)
 15. [Limitations & Validation Status](#15-limitations--validation-status)
 16. [References](#16-references)
+17. [Aggregate Data Analytics — R Shiny Dashboard](#17-aggregate-data-analytics--r-shiny-dashboard)
+18. [Research Use, Reproducibility & Data Management](#18-research-use-reproducibility--data-management)
+19. [Ethics, Consent & Regulatory Positioning](#19-ethics-consent--regulatory-positioning)
+20. [How to Cite / Authorship & Acknowledgements](#20-how-to-cite--authorship--acknowledgements)
 
 ---
 
@@ -1046,3 +1071,214 @@ https://www.jmir.org/2017/4/e120/PDF
 > interpretation*. They do **not** validate this specific software or its
 > prototype thresholds. Reference text was paraphrased and summarised for
 > compliance with source licensing.
+
+---
+
+## 17. Aggregate Data Analytics — R Shiny Dashboard
+
+Individual assessments are educational, but the scientific value of this system
+emerges at the **cohort level**. Every consented assessment is appended as one
+row to the aggregate Google Sheet (§14), and an accompanying **R Shiny**
+application turns that live dataset into an interactive analytics-and-education
+environment.
+
+- **Live dashboard:** <https://smile-rp.shinyapps.io/SMILE-PronatorDrift/>
+- **Data source:** the Google Sheet
+  <https://docs.google.com/spreadsheets/d/1OOmyyNWHg40keKS8rl8SQt7aQxwX14MdXsYQGiEVStQ>
+- **Source code:** [`PronatorDriftDashboard/app.R`](./PronatorDriftDashboard/app.R)
+  with deployment notes in [`PronatorDriftDashboard/README.md`](./PronatorDriftDashboard/README.md)
+
+### 17.1 Design intent
+
+The dashboard is deliberately **dual-purpose**:
+
+1. **Analytical** — it lets a researcher explore distributions, group
+   differences, left–right asymmetry, correlations, and data quality across the
+   whole cohort.
+2. **Educational** — every view carries an "About this view" panel written in
+   plain, non-diagnostic language, and every metric is defined in an on-screen
+   data dictionary, so a student or clinician-in-training can learn *what the
+   test measures and why* while reading the data.
+
+It reads the sheet as a public CSV (`gviz/tq?tqx=out:csv`) and re-polls every two
+minutes, so newly completed assessments appear automatically. A status banner
+states whether the app is showing **live sheet data**, **demo data**, or **both**
+(the demo cohort of 60 synthetic records can be retained and the live rows
+appended beneath it, controlled by the `INCLUDE_DEMO_DATA` flag in `app.R`).
+
+### 17.2 Views
+
+| Tab | What it shows | Why it matters scientifically |
+|---|---|---|
+| **Overview** | KPIs, classification mix, timeline, and a primer on the three signs. | Orientates the reader; summarises cohort size, flag rate, and data quality at a glance. |
+| **Participants** | Age and gender distributions, device mix, drift-by-age. | Physiological tremor and baseline steadiness vary with age; cohort structure must be understood before interpreting group effects. |
+| **Drift & Pronation** | Left vs right violins with prototype reference bands, plus the drift × pronation "diagnostic quadrant". | Makes the classic *downward-drift-with-pronation* pattern visible and separates it from non-specific presentations. |
+| **Left–Right Asymmetry** | Left-vs-right scatter, asymmetry distribution, and a paired *t*-test. | Pronator drift is fundamentally an **asymmetry** sign; between-arm difference is often more informative than either arm alone. |
+| **Tremor & Stability** | Dominant-frequency density with the 8–12 Hz band, stability, wrist/fingertip amplitude, finger metrics. | Distinguishes physiological from pathological oscillation and quantifies hold steadiness. |
+| **Relationships** | Any-metric-vs-any-metric scatter explorer + Pearson correlation heatmap. | Surfaces associations and confounders (e.g. age vs tremor) for hypothesis generation. |
+| **Quality & Reliability** | Valid-frame %, effective FPS, and quality-vs-drift. | Guards against mistaking tracking artefacts for real movement findings. |
+| **Data Explorer** | Full filterable table, CSV download, and the data dictionary. | Enables independent re-analysis and export for statistical software. |
+
+### 17.3 Reproducing / redeploying the dashboard
+
+```r
+# Local run
+install.packages(c("shiny","bslib","ggplot2","dplyr","tidyr","DT",
+                   "plotly","scales","lubridate","stringr"))
+shiny::runApp("PronatorDriftDashboard")
+
+# Deploy to shinyapps.io
+install.packages("rsconnect")
+rsconnect::setAccountInfo(name = "smile-rp", token = "<token>", secret = "<secret>")
+rsconnect::deployApp(appDir = "PronatorDriftDashboard", appName = "SMILE-PronatorDrift")
+```
+
+The `SHEET_ID` and `SHEET_TAB` constants at the top of `app.R` point the
+dashboard at the dataset; they are already set to the SMILE results sheet.
+
+---
+
+## 18. Research Use, Reproducibility & Data Management
+
+This section documents the system as a **reproducible research instrument**.
+
+### 18.1 End-to-end data lineage
+
+```
+Camera (device) ─▶ MediaPipe pose/hand landmarks (in-browser, WASM)
+                 ─▶ DriftAnalyzer + MicroMovementAnalyzer (per-frame, on-device)
+                 ─▶ PronatorDriftAssessment (typed result object, §5)
+                 ─▶ sheetsExport.ts (consented POST of result values only)
+                 ─▶ Google Apps Script Web App (§14) ─▶ Google Sheet row
+                 ─▶ R Shiny dashboard (live CSV read, §17)
+```
+
+No video frames or raw landmark coordinates leave the device at any point; only
+the **derived, aggregate result values** and the **participant intake fields**
+are transmitted, and only with consent.
+
+### 18.2 The record (one row per assessment)
+
+Each row of the aggregate sheet is a complete, self-describing observation:
+
+- **Participant intake** — Name, Gender, Age, Declaration Accepted, and the
+  captured **Test Date/Time** (ISO 8601), entered at the start of the session.
+- **Session metadata** — assessment ID, start/complete timestamps, duration,
+  device type, overall classification, assessed arm.
+- **Quality metrics** — valid-frame %, mean pose/hand confidence, camera
+  stability, primary failure reason.
+- **Analysis/reliability metadata** — delivered/dropped frame counts, effective
+  frame rate, frame-rate-below-minimum flag, recording status, bandwidth-limited
+  and pose-only-path flags.
+- **Per-arm metrics (LEFT and RIGHT)** — max drift, drift onset, drift duration,
+  sustained-drift flag, elbow drift, baseline wrist height, pronation degrees,
+  possible-pronation flag, supination→pronation trend, elbow-flexion change,
+  arm-to-torso change, wrist and fingertip tremor amplitude, dominant tremor
+  frequency, stability, finger-curl and finger-spread change, tremor variability,
+  and per-arm confidence.
+- **Reference-range outcomes** — within/outside/no-reference for the three
+  prototype-seeded indicators, plus an "any indicator outside range" flag.
+
+Full field-by-field definitions and units are in §5 (Complete Data Dictionary);
+the exact column order is in §14.2 (`HEADERS_`).
+
+### 18.3 Units, coordinate frame, and normalisation
+
+- Positions are **normalised image coordinates** in `[0, 1]`; drift is divided by
+  **arm length** (shoulder→wrist distance) so measurements are invariant to the
+  subject's distance from the camera.
+- Angles are in **degrees**; frequency in **Hz** (capped at the Nyquist limit for
+  the effective frame rate); stability is a bounded `(0, 1]` ratio.
+- Torso compensation is subtracted from wrist drift so whole-body sinking is not
+  mistaken for arm drift (§4.4).
+
+### 18.4 Suggested analyses
+
+- **Asymmetry as the primary signal:** analyse `|Left − Right|` for drift,
+  pronation, and stability rather than raw per-arm values.
+- **Age adjustment:** treat age as a covariate — physiological tremor and reduced
+  steadiness rise with age and can confound group comparisons.
+- **Quality gating:** exclude or sensitivity-test rows with low valid-frame % or
+  effective FPS below the configured minimum before drawing conclusions.
+- **Threshold calibration:** the seeded reference ranges (§5.7) are prototypes;
+  the aggregate dataset is the substrate for deriving empirically-grounded ranges
+  in future validation work.
+
+### 18.5 Reproducibility checklist
+
+- Deterministic, documented pipeline (source in `src/analysis/`, thresholds in
+  `src/config/ConfigStore.ts`, all versioned in Git).
+- Model versions recorded per assessment (`modelVersions`, §5.6).
+- Property-based and end-to-end tests (`npm run test`, `npm run test:e2e`).
+- Open data path (public sheet) and open analysis code (`PronatorDriftDashboard/`).
+
+---
+
+## 19. Ethics, Consent & Regulatory Positioning
+
+### 19.1 Consent model
+
+Consent is obtained **before** any measurement, on the participant intake screen,
+via an explicit declaration the participant must accept to proceed. The
+declaration states that the participant's details and screening results are
+recorded for the session, and that the tool is a research prototype and screening
+aid — **not a medical device**. The acceptance flag (`Declaration Accepted`) is
+stored with every record so consent is auditable.
+
+### 19.2 Data minimisation & privacy
+
+- **On-device computation:** video and landmark data never leave the device.
+- **Transmitted data:** only derived result values and the intake fields, and
+  only when the operator has configured the export (§14) for a consented session.
+- **Personal data:** participant name and age are personal data. Restrict access
+  to the results sheet and dashboard accordingly (e.g. shinyapps.io
+  authentication), and pseudonymise names where full identification is not
+  required for your protocol.
+- **Right to deletion:** the app provides an on-device "Delete Assessment Data"
+  control; sheet rows can be removed directly by the data controller.
+
+### 19.3 Regulatory positioning
+
+This software is a **research prototype and educational tool**. It is not
+CE-marked, not FDA-cleared, and not registered as a medical device in any
+jurisdiction. All thresholds and reference ranges are prototype values pending
+clinical validation. Outputs use non-diagnostic language throughout. It must be
+used only under appropriate professional supervision and governance, and never as
+a standalone basis for clinical decisions.
+
+---
+
+## 20. How to Cite / Authorship & Acknowledgements
+
+### 20.1 Suggested citation
+
+> SMILE — *Smart Monitoring for Individualised Living and Engagement*.
+> *Pronator Drift Computer-Vision Screening Application and Aggregate Analytics
+> Dashboard.* Research prototype. Software: <https://github.com/aaron-chen-angus/pronator-drift-app>.
+> Live app: <https://aaron-chen-angus.github.io/pronator-drift-app/>.
+> Analytics dashboard: <https://smile-rp.shinyapps.io/SMILE-PronatorDrift/>.
+> (Add year, version tag, and DOI on release.)
+
+*(Adjust the author list, affiliations, and year to match your publication
+records before formal dissemination.)*
+
+### 20.2 Making the release citable
+
+- Tag a release in the repository (e.g. `v1.0.0`) and, if a persistent identifier
+  is required, mint a **DOI** via a Git-archiving service such as Zenodo by
+  linking the repository and publishing a release.
+- Record the exact MediaPipe model versions used (already captured per assessment
+  in `modelVersions`, §5.6) in the methods section of any publication.
+
+### 20.3 Software components & acknowledgements
+
+- **Google MediaPipe Tasks-Vision** — Pose Landmarker (Lite, float16) and Hand
+  Landmarker (float16): <https://ai.google.dev/edge/mediapipe/solutions/vision>
+- **Web application:** React 19, TypeScript, Vite, Vitest, fast-check, Playwright.
+- **Analytics dashboard:** R, Shiny, bslib, ggplot2, dplyr, tidyr, DT, plotly,
+  scales; hosted on shinyapps.io.
+- **Data transport:** Google Apps Script + Google Sheets.
+
+> The scientific references in §16 ground the *manoeuvre and its clinical
+> interpretation*. They do **not** validate this specific software or its
+> prototype thresholds, which remain pending clinical validation.
