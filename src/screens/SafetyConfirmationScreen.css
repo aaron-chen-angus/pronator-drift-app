@@ -1,0 +1,226 @@
+/**
+ * Safety Confirmation Screen styles
+ *
+ * Dark theme with cyan accents. Urgent warning is visually distinct
+ * with error/warning coloring to stand out from the rest of the content.
+ */
+
+.safety-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  width: 100%;
+  padding: var(--spacing-md);
+  max-width: 100%;
+}
+
+.safety-screen__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent-cyan);
+  text-align: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.safety-screen__description {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* ─── Urgent Symptom Warning ─────────────────────────────────────── */
+
+.safety-screen__urgent-warning {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 2px solid var(--color-error);
+  border-radius: var(--border-radius-md);
+  background-color: rgba(255, 82, 82, 0.08);
+  margin: var(--spacing-sm) 0;
+}
+
+.safety-screen__urgent-warning-icon {
+  font-size: var(--font-size-xl);
+  line-height: 1;
+  flex-shrink: 0;
+  color: var(--color-error);
+}
+
+.safety-screen__urgent-warning-content {
+  flex: 1;
+}
+
+.safety-screen__urgent-warning-heading {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-error);
+  margin-bottom: var(--spacing-xs);
+}
+
+.safety-screen__urgent-warning-list {
+  list-style: disc;
+  padding-left: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+
+.safety-screen__urgent-warning-list li {
+  margin-bottom: 2px;
+}
+
+/* ─── Safety Checklist ───────────────────────────────────────────── */
+
+.safety-screen__checklist {
+  border: var(--border-width) solid rgba(0, 229, 255, 0.15);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  background-color: var(--color-bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.safety-screen__checklist-legend {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent-cyan);
+  padding: 0 var(--spacing-xs);
+}
+
+.safety-screen__checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  padding: var(--spacing-xs) 0;
+  min-height: 44px;
+  align-items: center;
+}
+
+.safety-screen__checkbox {
+  /* Visually hidden but accessible */
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.safety-screen__checkbox-custom {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--color-text-muted);
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.safety-screen__checkbox:checked + .safety-screen__checkbox-custom {
+  border-color: var(--color-accent-cyan);
+  background-color: var(--color-accent-cyan);
+}
+
+.safety-screen__checkbox:checked + .safety-screen__checkbox-custom::after {
+  content: '';
+  width: 6px;
+  height: 10px;
+  border: solid var(--color-bg-primary);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.safety-screen__checkbox:focus-visible + .safety-screen__checkbox-custom {
+  outline: 2px solid var(--color-accent-cyan);
+  outline-offset: 2px;
+}
+
+.safety-screen__checkbox-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+/* ─── Seated Recommendation ──────────────────────────────────────── */
+
+.safety-screen__seated-recommendation {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+  font-style: italic;
+  padding: var(--spacing-xs) var(--spacing-md);
+}
+
+/* ─── Action Buttons ─────────────────────────────────────────────── */
+
+.safety-screen__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.safety-screen__btn {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  border: var(--border-width) solid transparent;
+  transition: background-color var(--transition-fast), opacity var(--transition-fast), border-color var(--transition-fast);
+  min-height: 44px;
+  text-align: center;
+}
+
+.safety-screen__btn--ready {
+  background-color: var(--color-accent-cyan);
+  color: var(--color-bg-primary);
+  border-color: var(--color-accent-cyan);
+}
+
+.safety-screen__btn--ready:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.safety-screen__btn--ready:not(:disabled):hover {
+  background-color: #33ecff;
+}
+
+.safety-screen__btn--ready:not(:disabled):active {
+  background-color: #00b8d4;
+}
+
+.safety-screen__btn--exit {
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  border-color: var(--color-text-muted);
+}
+
+.safety-screen__btn--exit:hover {
+  border-color: var(--color-text-secondary);
+  color: var(--color-text-primary);
+}
+
+.safety-screen__btn--exit:active {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ─── Touch Target Minimum (mobile) ─────────────────────────────── */
+
+@media (max-width: 768px) {
+  .safety-screen__checkbox-label {
+    min-height: 44px;
+    padding: var(--spacing-xs) 0;
+  }
+
+  .safety-screen__btn {
+    min-height: 44px;
+  }
+}

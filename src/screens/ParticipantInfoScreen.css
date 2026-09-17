@@ -1,0 +1,196 @@
+/**
+ * ParticipantInfoScreen styles
+ *
+ * Matches the app's dark navy background with cyan/turquoise accents.
+ * Form controls use min 44px touch targets and 4.5:1 contrast.
+ */
+
+.participant-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-md);
+  width: 100%;
+  max-width: 100%;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────── */
+
+.participant-screen__header {
+  text-align: center;
+}
+
+.participant-screen__title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-accent-cyan);
+  margin-bottom: var(--spacing-sm);
+  letter-spacing: 0.02em;
+}
+
+.participant-screen__description {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height);
+}
+
+/* ─── Form ───────────────────────────────────────────────────────────── */
+
+.participant-screen__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  width: 100%;
+  max-width: 420px;
+}
+
+.participant-screen__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.participant-screen__label {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.participant-screen__input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width) solid rgba(0, 229, 255, 0.35);
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-body);
+  font-family: var(--font-family);
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast);
+}
+
+.participant-screen__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.participant-screen__input:focus {
+  outline: none;
+  border-color: var(--color-accent-cyan);
+  box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.25);
+}
+
+.participant-screen__input[aria-invalid='true'] {
+  border-color: #ff8a80;
+}
+
+.participant-screen__select {
+  appearance: none;
+  cursor: pointer;
+}
+
+/* ─── Declaration ────────────────────────────────────────────────────── */
+
+.participant-screen__declaration {
+  border: var(--border-width) solid rgba(0, 229, 255, 0.2);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-md);
+  margin: 0;
+}
+
+.participant-screen__declaration-legend {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent-turquoise);
+  padding: 0 var(--spacing-xs);
+}
+
+.participant-screen__checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height);
+}
+
+.participant-screen__checkbox {
+  margin-top: 2px;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  accent-color: var(--color-accent-cyan);
+  cursor: pointer;
+}
+
+.participant-screen__checkbox-text strong {
+  color: var(--color-text-primary);
+}
+
+/* ─── Errors ─────────────────────────────────────────────────────────── */
+
+.participant-screen__error {
+  font-size: var(--font-size-sm);
+  color: #ff8a80;
+}
+
+/* ─── Actions ────────────────────────────────────────────────────────── */
+
+.participant-screen__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.participant-screen__btn {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+  min-height: 44px;
+  border: var(--border-width) solid transparent;
+}
+
+.participant-screen__btn--primary {
+  background-color: var(--color-accent-cyan);
+  color: var(--color-bg-primary);
+  border-color: var(--color-accent-cyan);
+}
+
+.participant-screen__btn--primary:hover:not(:disabled) {
+  background-color: #33ecff;
+  border-color: #33ecff;
+}
+
+.participant-screen__btn--primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.participant-screen__btn--secondary {
+  background-color: transparent;
+  color: var(--color-accent-cyan);
+  border-color: var(--color-accent-cyan);
+}
+
+.participant-screen__btn--secondary:hover {
+  background-color: rgba(0, 229, 255, 0.1);
+}
+
+/* ─── Privacy note ───────────────────────────────────────────────────── */
+
+.participant-screen__privacy {
+  font-size: var(--font-size-sm);
+  color: var(--color-accent-turquoise);
+  opacity: 0.85;
+  text-align: center;
+  max-width: 420px;
+}
