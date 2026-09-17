@@ -671,28 +671,71 @@ Actions run summary and under **Settings → Pages**.
 
 ## 14. Integrating Live Results with Google Sheets
 
-This optional integration posts each completed assessment's **result values**
-(never video) to a Google Sheet via a Google Apps Script Web App. It uses a
-"fire-and-forget" `POST` that avoids CORS preflight, so it works from a static
-site (GitHub Pages or the standalone launcher).
+This optional integration posts each completed assessment's **participant intake
+details** (name, gender, age, declaration, and the captured test date/time) plus
+**every metric in the data dictionary (§5)** — never video — to a Google Sheet
+via a Google Apps Script Web App. It uses a "fire-and-forget" `POST` that avoids
+a CORS preflight, so it works from a static site (GitHub Pages or the standalone
+launcher).
 
-> **Consent first.** Enabling this transmits result values off-device. Inform
-> participants and obtain consent.
+The app already ships with the client-side helper (`src/integrations/sheetsExport.ts`)
+wired into the results flow. It is a **no-op until you configure a Web App URL**,
+so nothing is transmitted by default. You only need to (1) create the sheet +
+Apps Script, and (2) give the app the resulting URL (§14.4 / §6-equivalent below).
 
-### 14.1 Create the Apps Script Web App
+> **Consent first.** Enabling this transmits participant details and result
+> values off-device. The intake declaration on the participant screen covers
+> this consent; do not enable the export for participants who have not accepted
+> it, and follow your institution's data-handling / ethics requirements.
 
-1. Create a new Google Sheet; copy its ID from the URL
-   (`https://docs.google.com/spreadsheets/d/`**`<THIS-IS-THE-ID>`**`/edit`).
-2. In the sheet: **Extensions → Apps Script**, delete the placeholder, and paste
-   the script below.
-3. Set `SPREADSHEET_ID` to your sheet's ID.
-4. **Deploy → New deployment → Web app**; set **Execute as: Me** and
-   **Who has access: Anyone**. Authorise when prompted.
-5. Copy the **Web App URL** — you will paste it into the app config.
+### 14.1 Create the Google Sheet and Apps Script Web App (step by step)
+
+1. **Create the sheet.** Go to <https://sheets.google.com> and create a new blank
+   spreadsheet. Give it a name such as *Pronator Drift Results*.
+2. **Copy the Sheet ID.** It is the long token in the URL between `/d/` and
+   `/edit`:
+   `https://docs.google.com/spreadsheets/d/`**`<THIS-IS-THE-ID>`**`/edit`.
+3. **Open the script editor.** In the sheet menu, choose
+   **Extensions → Apps Script**. A new editor tab opens.
+4. **Paste the script.** Delete any placeholder `function myFunction() {}` and
+   paste the entire script from §14.2 below.
+5. **Set your Sheet ID.** Replace `PASTE_YOUR_SHEET_ID_HERE` with the ID from
+   step 2.
+6. **Save** (the floppy-disk icon, or `Ctrl`/`Cmd` + `S`).
+7. **Create the header row once (recommended).** In the Apps Script toolbar,
+   select the function `setupHeaders` from the dropdown and click **Run**. The
+   first time you run anything you will be asked to **Review permissions →
+   choose your Google account → Advanced → Go to <project> (unsafe) → Allow**.
+   (The "unsafe" wording is Google's standard message for personal scripts; it
+   simply means the script is not published/verified. It only edits *your* sheet.)
+   After it runs, row 1 of the **Results** tab will contain the full header.
+8. **Deploy as a Web App.** Click **Deploy → New deployment**. Click the gear
+   next to *Select type* and choose **Web app**. Set:
+   - **Description:** anything, e.g. `v1`.
+   - **Execute as:** **Me**.
+   - **Who has access:** **Anyone** (this allows anonymous `POST`s from the app;
+     no one can read your sheet through it — the endpoint only appends rows).
+9. Click **Deploy**, authorise if prompted, and **copy the Web App URL**. It
+   looks like `https://script.google.com/macros/s/AKfyc.../exec`.
+10. **Test it.** Open that URL in a browser. You should see
+    `{"status":"Pronator Drift API running"}`. That confirms the deployment is
+    live. You will paste this URL into the app in §14.4.
+
+> **Updating the script later.** If you change the script, you must
+> **Deploy → Manage deployments → (edit) → New version → Deploy** for the change
+> to take effect. Creating a brand-new deployment instead gives you a *new* URL.
+
+### 14.2 Apps Script (full — participant details + every metric)
+
+This writes one row per assessment. The header row and the row builder are kept
+in lock-step with the client payload in `src/integrations/sheetsExport.ts`. If
+you add a field in one place, add it in the other (append to the **end** so
+existing columns keep their position).
 
 ```javascript
 /**
  * Pronator Drift — Google Apps Script (results sink).
+ * Writes participant intake details + every data-dictionary metric.
  * Deploy as Web App: Execute as "Me", Access "Anyone".
  */
 const SPREADSHEET_ID = "PASTE_YOUR_SHEET_ID_HERE";
@@ -714,6 +757,14 @@ function doPost(e) {
 
 function doGet() { return json_({ status: "Pronator Drift API running" }); }
 
+/** Run this once from the editor to write/refresh the bold header row. */
+function setupHeaders() {
+  var sheet = getOrCreateSheet_();
+  var h = HEADERS_();
+  sheet.getRange(1, 1, 1, h.length).setValues([h]).setFontWeight("bold");
+  sheet.setFrozenRows(1);
+}
+
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
@@ -724,17 +775,42 @@ function getOrCreateSheet_() {
   return ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
 }
 
+/**
+ * The complete header row. Order MUST match buildRow_() below and the payload
+ * emitted by src/integrations/sheetsExport.ts.
+ */
 function HEADERS_() {
   return [
-    "Timestamp", "Assessment ID", "Duration (s)", "Device",
-    "Overall Classification", "Quality", "Valid Frame %", "Effective FPS",
-    "Assessed Arm",
-    "Left Max Drift", "Left Pronation (deg)", "Left Possible Pronation", "Left Sustained Drift",
-    "Right Max Drift", "Right Pronation (deg)", "Right Possible Pronation", "Right Sustained Drift",
-    "Left Elbow Flexion Change (deg)", "Right Elbow Flexion Change (deg)",
-    "Left Wrist Tremor Amp", "Right Wrist Tremor Amp",
-    "Left Tremor Freq (Hz)", "Right Tremor Freq (Hz)",
-    "Left Stability", "Right Stability",
+    // ── Participant intake ──────────────────────────────────────────────
+    "Participant Name", "Gender", "Age", "Declaration Accepted", "Test Date/Time",
+    // ── Session metadata ────────────────────────────────────────────────
+    "Exported At", "Assessment ID", "Started At", "Completed At", "Duration (s)",
+    "Device", "Overall Classification", "Assessed Arm",
+    // ── Quality metrics ─────────────────────────────────────────────────
+    "Quality", "Valid Frame %", "Avg Pose Confidence",
+    "Avg Left Hand Confidence", "Avg Right Hand Confidence", "Camera Stability",
+    "Primary Failure Reason",
+    // ── Analysis / reliability metadata ─────────────────────────────────
+    "Delivered Frames", "Dropped Frames", "Effective FPS", "Frame Rate Below Min",
+    "Recording Status", "Tremor Freq Bandwidth Limited", "Used Pose-Only Path",
+    // ── LEFT arm metrics ────────────────────────────────────────────────
+    "Left Max Drift (norm)", "Left Drift Onset (s)", "Left Drift Duration (ms)",
+    "Left Sustained Drift", "Left Elbow Drift (norm)", "Left Baseline Wrist Height",
+    "Left Pronation (deg)", "Left Possible Pronation", "Left Supination→Pronation Trend",
+    "Left Elbow Flexion Change (deg)", "Left Arm-to-Torso Change (deg)",
+    "Left Wrist Tremor Amp", "Left Fingertip Tremor Amp", "Left Tremor Freq (Hz)",
+    "Left Stability", "Left Finger Curl Change", "Left Finger Spread Change",
+    "Left Wrist Tremor SD", "Left Stability Mean", "Left Confidence",
+    // ── RIGHT arm metrics ───────────────────────────────────────────────
+    "Right Max Drift (norm)", "Right Drift Onset (s)", "Right Drift Duration (ms)",
+    "Right Sustained Drift", "Right Elbow Drift (norm)", "Right Baseline Wrist Height",
+    "Right Pronation (deg)", "Right Possible Pronation", "Right Supination→Pronation Trend",
+    "Right Elbow Flexion Change (deg)", "Right Arm-to-Torso Change (deg)",
+    "Right Wrist Tremor Amp", "Right Fingertip Tremor Amp", "Right Tremor Freq (Hz)",
+    "Right Stability", "Right Finger Curl Change", "Right Finger Spread Change",
+    "Right Wrist Tremor SD", "Right Stability Mean", "Right Confidence",
+    // ── Reference-range comparison outcomes ─────────────────────────────
+    "Norm: Wrist Drift", "Norm: Palm Rotation", "Norm: Wrist Tremor Freq",
     "Any Indicator Outside Range"
   ];
 }
@@ -743,111 +819,160 @@ function ensureHeaders_(sheet) {
   if (sheet.getRange(1, 1).getValue() === "") {
     var h = HEADERS_();
     sheet.getRange(1, 1, 1, h.length).setValues([h]).setFontWeight("bold");
+    sheet.setFrozenRows(1);
   }
 }
 
+/** Safe getter: returns "" for null/undefined so blanks stay blank. */
+function v_(x) { return (x === null || x === undefined) ? "" : x; }
+
 function buildRow_(d) {
   var L = d.left || {}, R = d.right || {};
+  function armCols(A) {
+    return [
+      v_(A.maxDrift), v_(A.driftOnsetSeconds), v_(A.driftDurationMs),
+      !!A.sustainedDrift, v_(A.elbowDriftMax), v_(A.baselineWristHeight),
+      v_(A.pronationDegrees), !!A.possiblePronation, !!A.supinationToPronationTrend,
+      v_(A.elbowFlexionChange), v_(A.armToTorsoChange),
+      v_(A.wristTremorAmplitude), v_(A.fingertipTremorAmplitude), v_(A.tremorFrequency),
+      v_(A.stability), v_(A.fingerCurlChange), v_(A.fingerSpreadChange),
+      v_(A.wristTremorSd), v_(A.stabilityMean), v_(A.confidence)
+    ];
+  }
   return [
-    d.timestamp || new Date().toISOString(),
-    d.assessmentId || "",
-    d.durationSeconds || "",
-    d.deviceType || "",
-    d.overallClassification || "",
-    d.quality || "",
-    d.validFramePercentage != null ? d.validFramePercentage : "",
-    d.effectiveFrameRate != null ? d.effectiveFrameRate : "",
-    d.assessedArm || "",
-    L.maxDrift != null ? L.maxDrift : "",
-    L.pronationDegrees != null ? L.pronationDegrees : "",
-    !!L.possiblePronation,
-    !!L.sustainedDrift,
-    R.maxDrift != null ? R.maxDrift : "",
-    R.pronationDegrees != null ? R.pronationDegrees : "",
-    !!R.possiblePronation,
-    !!R.sustainedDrift,
-    L.elbowFlexionChange != null ? L.elbowFlexionChange : "",
-    R.elbowFlexionChange != null ? R.elbowFlexionChange : "",
-    L.wristTremorAmplitude != null ? L.wristTremorAmplitude : "",
-    R.wristTremorAmplitude != null ? R.wristTremorAmplitude : "",
-    L.tremorFrequency != null ? L.tremorFrequency : "",
-    R.tremorFrequency != null ? R.tremorFrequency : "",
-    L.stability != null ? L.stability : "",
-    R.stability != null ? R.stability : "",
-    !!d.anyIndicatorOutsideRange
-  ];
+    // Participant intake
+    v_(d.participantName), v_(d.participantGender), v_(d.participantAge),
+    !!d.declarationAccepted, v_(d.testDateTime),
+    // Session metadata
+    v_(d.exportedAt) || new Date().toISOString(), v_(d.assessmentId),
+    v_(d.startedAt), v_(d.completedAt), v_(d.durationSeconds),
+    v_(d.deviceType), v_(d.overallClassification), v_(d.assessedArm),
+    // Quality metrics
+    v_(d.quality), v_(d.validFramePercentage), v_(d.avgPoseConfidence),
+    v_(d.avgLeftHandConfidence), v_(d.avgRightHandConfidence), v_(d.cameraStability),
+    v_(d.primaryFailureReason),
+    // Analysis metadata
+    v_(d.deliveredFrameCount), v_(d.droppedFrameCount), v_(d.effectiveFrameRate),
+    !!d.frameRateBelowMinimum, v_(d.recordingStatus),
+    !!d.dominantFrequencyBandwidthLimited, !!d.usedPoseOnlyPath
+  ]
+    .concat(armCols(L))
+    .concat(armCols(R))
+    .concat([
+      // Reference-range comparison outcomes
+      v_(d.normWristDrift), v_(d.normPalmRotation), v_(d.normWristTremorFreq),
+      !!d.anyIndicatorOutsideRange
+    ]);
 }
 ```
 
-### 14.2 Wire the app to post results
+### 14.3 What the client sends
 
-Add a small helper and call it when an assessment completes. Create
-`src/integrations/sheetsExport.ts`:
+The client helper `src/integrations/sheetsExport.ts` is already wired into the
+app (it fires once when the results screen is shown). Its JSON payload mirrors
+the header order above:
 
-```typescript
-import type { PronatorDriftAssessment, MicroMovementIndicators } from '../types/index';
+- **Participant:** `participantName`, `participantGender`, `participantAge`,
+  `declarationAccepted`, `testDateTime`.
+- **Session:** `exportedAt`, `assessmentId`, `startedAt`, `completedAt`,
+  `durationSeconds`, `deviceType`, `overallClassification`, `assessedArm`.
+- **Quality:** `quality`, `validFramePercentage`, `avgPoseConfidence`,
+  `avgLeftHandConfidence`, `avgRightHandConfidence`, `cameraStability`,
+  `primaryFailureReason`.
+- **Analysis meta:** `deliveredFrameCount`, `droppedFrameCount`,
+  `effectiveFrameRate`, `frameRateBelowMinimum`, `recordingStatus`,
+  `dominantFrequencyBandwidthLimited`, `usedPoseOnlyPath`.
+- **Per arm (`left` / `right` objects):** `maxDrift`, `driftOnsetSeconds`,
+  `driftDurationMs`, `sustainedDrift`, `elbowDriftMax`, `baselineWristHeight`,
+  `pronationDegrees`, `possiblePronation`, `supinationToPronationTrend`,
+  `elbowFlexionChange`, `armToTorsoChange`, `wristTremorAmplitude`,
+  `fingertipTremorAmplitude`, `tremorFrequency`, `stability`, `fingerCurlChange`,
+  `fingerSpreadChange`, `wristTremorSd`, `stabilityMean`, `confidence`.
+- **Norm outcomes:** `normWristDrift`, `normPalmRotation`, `normWristTremorFreq`,
+  `anyIndicatorOutsideRange`.
 
-// Paste your Apps Script Web App URL here (or read from an env/config value).
-const SHEETS_WEBAPP_URL = '';
+### 14.4 Give the app your Web App URL
 
-function arm(ind: MicroMovementIndicators | undefined, maxDrift: number) {
-  return {
-    maxDrift,
-    pronationDegrees: ind?.totalPalmRotationChangeDegrees ?? null,
-    possiblePronation: ind?.possiblePronation ?? false,
-    sustainedDrift: ind?.sustainedDrift ?? false,
-    elbowFlexionChange: ind?.maxElbowFlexionChangeDegrees ?? null,
-    wristTremorAmplitude: ind?.wristTremorAmplitude.summary.max ?? null,
-    tremorFrequency: ind?.wristTremorDominantFrequency.summary.max ?? null,
-    stability: ind?.stability.summary.max ?? null,
-  };
-}
+Choose **one** of the following:
 
-export function exportToSheets(a: PronatorDriftAssessment): void {
-  if (!SHEETS_WEBAPP_URL) return; // disabled unless a URL is configured
-  const payload = {
-    timestamp: new Date().toISOString(),
-    assessmentId: a.assessmentId,
-    durationSeconds: a.durationSeconds,
-    deviceType: a.deviceType,
-    overallClassification: a.overallClassification,
-    quality: a.quality.overall,
-    validFramePercentage: a.quality.metrics.validFramePercentage,
-    effectiveFrameRate: a.analysisMeta?.effectiveFrameRate ?? null,
-    assessedArm: a.assessedArm ?? null,
-    left: arm(a.leftIndicators, a.leftArm.maximumDownwardDriftNormalised),
-    right: arm(a.rightIndicators, a.rightArm.maximumDownwardDriftNormalised),
-    anyIndicatorOutsideRange:
-      (a.normComparisons ?? []).some((c) => c.outcome === 'outside'),
-  };
-  // text/plain avoids a CORS preflight; the Apps Script parses JSON from the body.
-  void fetch(SHEETS_WEBAPP_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
-  }).catch(() => {/* non-blocking; failures never affect the UX */});
-}
-```
+1. **Environment variable (recommended — keeps the URL out of the source).**
+   Create a file named `.env.local` in the project root with:
 
-Then call it once results are built — for example in `App.tsx`, right after
-`buildCompletedAssessment()` produces the assessment:
+   ```
+   VITE_SHEETS_WEBAPP_URL=https://script.google.com/macros/s/AKfyc.../exec
+   ```
 
-```typescript
-import { exportToSheets } from './integrations/sheetsExport';
-// ...
-const assessment = buildCompletedAssessment();
-exportToSheets(assessment); // no-op until SHEETS_WEBAPP_URL is set
-```
+   Then rebuild (see §14.5). Vite injects this at build time.
 
-### 14.3 Notes
+2. **In-source constant (quick, but do not commit it publicly).** Open
+   `src/integrations/sheetsExport.ts` and set:
+
+   ```typescript
+   const SHEETS_WEBAPP_URL_CONSTANT = 'https://script.google.com/macros/s/AKfyc.../exec';
+   ```
+
+The env var takes precedence over the constant when both are present.
+
+### 14.5 Rebuild after configuring
+
+The URL is baked in at build time, so rebuild the artefact you actually deploy:
+
+- **Standalone launcher / single-file build:**
+
+  ```powershell
+  npm run build:standalone   # if defined, else:
+  npx vite build --config vite.config.singlefile.ts
+  ```
+
+  (On the bundled Windows Node, run the equivalent:
+  `.\.node\node-v20.18.0-win-x64\node.exe .\node_modules\vite\bin\vite.js build --config vite.config.singlefile.ts`.)
+  This regenerates `standalone/app/index.html`.
+
+- **GitHub Pages build:**
+
+  ```powershell
+  npm run build   # outputs dist/, deployed by the Actions workflow
+  ```
+
+### 14.6 Notes & troubleshooting
 
 - The `no-cors` / `text/plain` pattern intentionally makes the response opaque —
   the client cannot read the reply, which is fine for a fire-and-forget log.
-- To verify delivery, open the Web App URL directly (it returns the running-status
-  JSON) and confirm rows appear in the sheet after an assessment.
-- Keep the Web App URL out of public commits if you want to restrict who can post
-  (e.g. inject it at build time via an environment variable).
+- **No rows appearing?** Confirm the Web App URL ends in `/exec` (not `/dev`),
+  that access is **Anyone**, and that you re-deployed a **new version** after any
+  script edit. Open the URL directly to confirm the running-status JSON.
+- **Header mismatch:** if you added metrics, re-run `setupHeaders` after clearing
+  row 1, or append the new columns to both `HEADERS_()` and `buildRow_()`.
+- **Privacy:** participant name/age are personal data. Restrict who can view the
+  sheet, and only enable the export where the intake declaration was accepted.
+
+### 14.7 When you hand over the Web App URL (what gets updated)
+
+Once you have the Web App URL from §14.1, this is exactly what changes in the
+site so results start flowing to your sheet:
+
+1. **`src/integrations/sheetsExport.ts`** — the URL is placed either in the
+   `SHEETS_WEBAPP_URL_CONSTANT` constant or, preferably, in a root `.env.local`
+   as `VITE_SHEETS_WEBAPP_URL`. This single value flips the export from a no-op
+   to live. No other source file needs editing — the helper is already imported
+   and fired from `src/App.tsx` when the results screen appears.
+2. **Rebuild the artefact you deploy** (§14.5): `npm run build:standalone`
+   refreshes `standalone/app/index.html` for the offline launcher, and
+   `npm run build` refreshes `dist/` for GitHub Pages.
+3. **Publish**:
+   - *Standalone:* re-zip / re-share the `standalone/` folder (or just the
+     regenerated `standalone/app/`).
+   - *GitHub Pages:* commit and push to `main`; the workflow at
+     `.github/workflows/deploy.yml` rebuilds and publishes automatically. The
+     live URL appears under **Settings → Pages** and in the Actions run summary.
+4. **Verify end-to-end:** run one assessment on the deployed site and confirm a
+   new row lands in the **Results** tab with the participant columns populated.
+
+> If you send me a **deployed site URL** (rather than the source) I can only
+> update files I have in this workspace — I cannot edit a hosted GitHub Pages
+> site directly. The flow is always: set the URL here → rebuild → you push /
+> redeploy. If your deployment is this same repo, pushing to `main` is all that
+> is needed after the rebuild.
 
 ---
 
