@@ -1,35 +1,46 @@
 /**
  * Global styles for Pronator Drift Screening Application
  *
- * Theme: Dark navy/near-black background with cyan/electric blue/turquoise accents
- * Typography: Sans-serif system stack, minimum 16px body text
+ * Theme: SMILE "TRON / Virtual BlazePod" — deep space black canvas, cyan/orange
+ * neon accents, Orbitron display + Exo 2 body type, hairline borders and glows.
  * Accessibility: 4.5:1 contrast ratio body text, 3:1 large text against dark background
  */
 
 :root {
-  /* ─── Color Palette ──────────────────────────────────────────────── */
-  --color-bg-primary: #0a0e17;
-  --color-bg-secondary: #111827;
-  --color-bg-surface: #1a2332;
+  /* ─── Color Palette (TRON tokens) ────────────────────────────────── */
+  --color-bg-primary: #050810;
+  --color-bg-primary-2: #0a0f1e;
+  --color-bg-secondary: #0a0f1e;
+  --color-bg-surface: #0d1526;
+  --color-bg-surface-2: #111d35;
 
-  --color-text-primary: #f0f4f8;
-  --color-text-secondary: #b0bec5;
-  --color-text-muted: #78909c;
+  --color-text-primary: #e8eaf0;
+  --color-text-secondary: #b0bcd4;
+  --color-text-muted: #6b7a99;
 
+  /* Neon orange = primary action / emphasis */
+  --color-accent-orange: #ff6b00;
+  /* Neon cyan = secondary / accents / headings */
   --color-accent-cyan: #00e5ff;
   --color-accent-blue: #2979ff;
-  --color-accent-turquoise: #1de9b6;
+  --color-accent-turquoise: #00e5ff;
 
-  --color-error: #ff5252;
-  --color-warning: #ffd740;
-  --color-success: #69f0ae;
+  --color-error: #ff3333;
+  --color-warning: #ffcc00;
+  --color-success: #00e676;
 
-  /* Grid line color (subtle geometric pattern) */
-  --color-grid: rgba(0, 229, 255, 0.06);
+  /* Hairline borders + grid lines */
+  --color-border: rgba(0, 229, 255, 0.18);
+  --color-grid: rgba(0, 229, 255, 0.07);
+
+  /* Neon glows */
+  --glow-orange: 0 0 12px rgba(255, 107, 0, 0.6), 0 0 30px rgba(255, 107, 0, 0.25);
+  --glow-cyan: 0 0 12px rgba(0, 229, 255, 0.5), 0 0 28px rgba(0, 229, 255, 0.2);
 
   /* ─── Typography ─────────────────────────────────────────────────── */
-  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  --font-family: 'Exo 2', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Orbitron', 'Exo 2', system-ui, sans-serif;
   --font-size-body: 16px;
   --font-size-sm: 14px;
   --font-size-lg: 20px;
@@ -138,4 +149,155 @@ body {
   75% {
     transform: rotate(15deg);
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SMILE TRON / Virtual BlazePod theme layer (cosmetic only)
+   ───────────────────────────────────────────────────────────────────────
+   Applies the neon display type, glows, hairline panels, and orange/cyan
+   accent system on top of the existing token-based styles. This layer only
+   restyles existing class names; it never changes structure or behaviour.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Deep-space gradient wash behind the fixed cyan grid (App.css .app::before). */
+body {
+  background-color: var(--color-bg-primary);
+  background-image:
+    radial-gradient(1200px 800px at 15% -10%, rgba(0, 229, 255, 0.05), transparent 60%),
+    radial-gradient(1000px 700px at 110% 20%, rgba(255, 107, 0, 0.05), transparent 55%);
+  background-attachment: fixed;
+}
+
+/* ─── Display typography (Orbitron) ─────────────────────────────────────
+   Screen titles, section headers, KPI numbers, and button labels use
+   Orbitron — uppercase, letter-spaced, with a subtle neon glow. Targets the
+   existing BEM heading/title/button classes so no markup changes are needed. */
+[class$="__title"],
+[class*="__section-title"],
+[class*="__section-heading"],
+.compatibility-gate__title,
+.app__screen-placeholder h2 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Primary emphasis headings glow cyan (secondary accent = headings). */
+[class$="__title"] {
+  color: var(--color-accent-cyan);
+  text-shadow: var(--glow-cyan);
+}
+
+/* Buttons: Orbitron labels, uppercase + letter-spaced. */
+[class*="__btn"],
+button {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+}
+
+[class*="__btn--primary"],
+[class*="__btn--ready"],
+[class*="__btn--continue"] {
+  text-transform: uppercase;
+}
+
+/* ─── Panels / cards: hairline cyan border, orange top-accent, glow ──────
+   The app's surface panels share the pattern "background: var(--color-bg-surface)".
+   We add a thin cyan border, an orange top accent line, and a soft shadow. */
+.welcome-screen__how-it-works,
+.results-screen__observation,
+.results-screen__details-content,
+.results-screen__indicators-section,
+.results-screen__norms-section,
+.results-screen__participant,
+.app__screen-placeholder,
+.compatibility-gate__content {
+  position: relative;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2), 0 8px 30px rgba(0, 0, 0, 0.45),
+    0 0 24px rgba(0, 229, 255, 0.06);
+}
+
+.welcome-screen__how-it-works::before,
+.results-screen__observation::before,
+.results-screen__indicators-section::before,
+.results-screen__norms-section::before,
+.results-screen__participant::before,
+.app__screen-placeholder::before,
+.compatibility-gate__content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--color-accent-orange), transparent);
+  box-shadow: var(--glow-orange);
+  pointer-events: none;
+}
+
+/* ─── Primary buttons: solid orange with orange glow ──────────────────── */
+.welcome-screen__btn--primary,
+.results-screen__btn--primary,
+.participant-screen__btn--primary,
+.instruction-screen__btn--continue,
+.safety-screen__btn--ready,
+.failure-screen__btn--primary,
+.assessment-screen__btn--retry {
+  background-color: var(--color-accent-orange);
+  border-color: var(--color-accent-orange);
+  color: #050810;
+  box-shadow: var(--glow-orange);
+}
+
+.welcome-screen__btn--primary:hover,
+.results-screen__btn--primary:hover,
+.participant-screen__btn--primary:hover:not(:disabled),
+.instruction-screen__btn--continue:hover:not(:disabled),
+.safety-screen__btn--ready:not(:disabled):hover,
+.failure-screen__btn--primary:hover,
+.assessment-screen__btn--retry:hover {
+  background-color: #ff8524;
+  border-color: #ff8524;
+}
+
+.welcome-screen__btn--primary:active,
+.results-screen__btn--primary:active,
+.instruction-screen__btn--continue:active:not(:disabled),
+.safety-screen__btn--ready:not(:disabled):active,
+.failure-screen__btn--primary:active,
+.assessment-screen__btn--retry:active {
+  background-color: #e05f00;
+  border-color: #e05f00;
+}
+
+/* ─── Secondary buttons: transparent with cyan border + cyan glow ─────── */
+.welcome-screen__btn--secondary,
+.results-screen__btn--secondary,
+.results-screen__details-toggle {
+  box-shadow: var(--glow-cyan);
+}
+
+/* ─── Inputs: dark surface, cyan hairline border, orange focus ring ───── */
+input,
+select,
+textarea {
+  font-family: var(--font-family);
+}
+
+input:not([type='checkbox']):not([type='radio']):focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.25);
+  border-color: var(--color-accent-orange);
+  outline: none;
+}
+
+/* KPI-style numeric emphasis (timer / countdown values) in Orbitron. */
+[class*="__timer"],
+[class*="__countdown"],
+[class*="__count"] {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
 }

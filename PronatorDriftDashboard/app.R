@@ -57,6 +57,14 @@ have_plotly    <- requireNamespace("plotly",    quietly = TRUE)
 have_lubridate <- requireNamespace("lubridate", quietly = TRUE)
 have_stringr   <- requireNamespace("stringr",   quietly = TRUE)
 
+# NAMESPACE SAFETY (do not remove):
+# plotly/DT pull in jsonlite, whose validate()/need-adjacent exports can mask
+# shiny::validate on the search path depending on load order, breaking every
+# validate(need(...)) guard with "is.character(txt) is not TRUE" or
+# "unused argument (need(...))". Pin them to shiny explicitly.
+validate <- shiny::validate
+need     <- shiny::need
+
 # ---- Data source -------------------------------------------------------------
 # Paste your published Sheet ID here (the token between /d/ and /edit in the URL).
 # The sheet must be shared as "Anyone with the link can view" for this CSV read.
@@ -70,20 +78,25 @@ sheet_csv_url <- function(id, tab) {
 AUTO_REFRESH_MS <- 120000  # re-poll every 2 minutes
 
 # ---- Colour system -----------------------------------------------------------
+# SMILE TRON / Virtual BlazePod palette. Keys kept identical so all downstream
+# plotting/theme code is unchanged — only the hex values are restyled.
 PAL <- list(
-  bg      = "#0b1020",  # deep navy
-  surface = "#121a30",
-  ink     = "#e8f6fb",
-  muted   = "#9fb3c8",
-  cyan    = "#22d3ee",
-  teal    = "#2dd4bf",
-  left    = "#38bdf8",  # left arm
-  right   = "#f472b6",  # right arm
-  warn    = "#fbbf24",
-  bad     = "#fb7185",
-  good    = "#34d399",
-  grid    = "#26324d"
+  bg      = "#050810",  # deep space black
+  surface = "#0d1526",  # panel surface
+  ink     = "#e8eaf0",  # primary text
+  muted   = "#6b7a99",  # muted text
+  cyan    = "#00e5ff",  # secondary accent / headings
+  orange  = "#ff6b00",  # primary emphasis
+  teal    = "#00e676",  # (kept key) success-green accent
+  left    = "#00e5ff",  # left arm  -> cyan
+  right   = "#ff6b00",  # right arm -> orange
+  warn    = "#ffcc00",  # warning yellow
+  bad     = "#ff3333",  # danger red
+  good    = "#00e676",  # success green
+  grid    = "rgba-fallback"  # placeholder, overwritten below
 )
+# Solid hex grid line (cyan-tinted) — kept as a plain hex so ggplot/plotly accept it.
+PAL$grid <- "#0f3242"
 CLASS_COLORS <- c(
   "no_significant_drift"            = PAL$good,
   "possible_left_pronator_drift"    = PAL$left,
@@ -385,29 +398,55 @@ kpi <- function(id, label) {
 
 pd_theme <- bs_theme(
   version = 5, bg = PAL$bg, fg = PAL$ink,
-  primary = PAL$cyan, secondary = PAL$teal,
-  base_font = font_google("Inter"), heading_font = font_google("Inter")
+  primary = PAL$orange, secondary = PAL$cyan,
+  base_font = font_google("Exo 2"), heading_font = font_google("Orbitron")
 )
 
 ui <- navbarPage(
   title = div(span("🩺", style = "margin-right:8px"), "Pronator Drift — Analytics & Education"),
   theme = pd_theme, collapsible = TRUE, id = "nav",
   header = tags$head(tags$style(HTML(sprintf("
-    body { background:%s; }
-    .pd-note { background:%s; border-left:4px solid %s; border-radius:8px;
-               padding:12px 16px; margin:10px 0; }
-    .pd-note-title { color:%s; font-weight:700; margin-bottom:4px; }
+    /* SMILE TRON / Virtual BlazePod theme (cosmetic only) */
+    body {
+      background:%s;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.07) 1px, transparent 1px);
+      background-size:40px 40px;
+    }
+    h1,h2,h3,h4,h5,.navbar-brand,.pd-kpi-value,.pd-kpi-label,.nav-tabs .nav-link {
+      font-family:'Orbitron','Exo 2',sans-serif;
+      text-transform:uppercase; letter-spacing:.08em;
+    }
+    h2,h3,h4 { color:%s; text-shadow:0 0 12px rgba(0,229,255,0.5),0 0 28px rgba(0,229,255,0.2); }
+    .navbar { background:%s !important; border-bottom:1px solid rgba(0,229,255,0.18); }
+    .navbar-brand { color:%s !important; }
+    .pd-note { background:%s; border:1px solid rgba(0,229,255,0.18);
+               border-left:4px solid %s; border-radius:8px;
+               padding:12px 16px; margin:10px 0;
+               box-shadow:0 0 24px rgba(0,229,255,0.06); }
+    .pd-note-title { color:%s; font-weight:700; margin-bottom:4px;
+                     font-family:'Orbitron','Exo 2',sans-serif; text-transform:uppercase;
+                     letter-spacing:.06em; }
     .pd-note-body { color:%s; font-size:.95rem; line-height:1.5; }
-    .pd-kpi { background:%s; border:1px solid %s; border-radius:14px;
-              padding:16px; text-align:center; }
-    .pd-kpi-value { font-size:2rem; font-weight:800; color:%s; }
-    .pd-kpi-label { color:%s; font-size:.85rem; text-transform:uppercase;
-                    letter-spacing:.05em; }
+    .pd-kpi { position:relative; background:%s; border:1px solid rgba(0,229,255,0.18);
+              border-radius:14px; padding:16px; text-align:center;
+              box-shadow:0 8px 30px rgba(0,0,0,0.45),0 0 24px rgba(0,229,255,0.06); }
+    .pd-kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:2px;
+              border-radius:14px 14px 0 0;
+              background:linear-gradient(90deg,transparent,%s,transparent);
+              box-shadow:0 0 12px rgba(255,107,0,0.6),0 0 30px rgba(255,107,0,0.25); }
+    .pd-kpi-value { font-size:2rem; font-weight:900; color:%s;
+              text-shadow:0 0 12px rgba(0,229,255,0.5); }
+    .pd-kpi-label { color:%s; font-size:.85rem; letter-spacing:.08em; }
     .card, .well, .tab-content { background:%s; }
     .nav-tabs .nav-link.active { color:%s; }
-    h2,h3,h4 { color:%s; }
-  ", PAL$bg, PAL$surface, PAL$cyan, PAL$cyan, PAL$muted, PAL$surface, PAL$grid,
-     PAL$cyan, PAL$muted, PAL$surface, PAL$cyan, PAL$ink)))),
+    .btn-primary { background:%s; border-color:%s; color:#050810; font-weight:700;
+              box-shadow:0 0 12px rgba(255,107,0,0.6),0 0 30px rgba(255,107,0,0.25); }
+    .btn-primary:hover { background:#ff8524; border-color:#ff8524; color:#050810; }
+  ", PAL$bg, PAL$cyan, PAL$surface, PAL$cyan, PAL$surface, PAL$cyan, PAL$cyan,
+     PAL$muted, PAL$surface, PAL$orange, PAL$cyan, PAL$muted, PAL$surface,
+     PAL$cyan, PAL$orange, PAL$orange)))),
 
   # ---- Overview -------------------------------------------------------------
   tabPanel("Overview",

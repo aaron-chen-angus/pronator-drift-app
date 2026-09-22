@@ -160,14 +160,15 @@
 }
 
 .participant-screen__btn--primary {
-  background-color: var(--color-accent-cyan);
+  background-color: var(--color-accent-orange);
   color: var(--color-bg-primary);
-  border-color: var(--color-accent-cyan);
+  border-color: var(--color-accent-orange);
+  box-shadow: var(--glow-orange);
 }
 
 .participant-screen__btn--primary:hover:not(:disabled) {
-  background-color: #33ecff;
-  border-color: #33ecff;
+  background-color: #ff8524;
+  border-color: #ff8524;
 }
 
 .participant-screen__btn--primary:disabled {

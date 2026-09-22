@@ -143,19 +143,20 @@
 }
 
 .instruction-screen__btn--continue {
-  background-color: var(--color-accent-cyan);
+  background-color: var(--color-accent-orange);
   color: var(--color-bg-primary);
-  border-color: var(--color-accent-cyan);
+  border-color: var(--color-accent-orange);
+  box-shadow: var(--glow-orange);
 }
 
 .instruction-screen__btn--continue:hover:not(:disabled) {
-  background-color: #33ecff;
-  border-color: #33ecff;
+  background-color: #ff8524;
+  border-color: #ff8524;
 }
 
 .instruction-screen__btn--continue:active:not(:disabled) {
-  background-color: #00bcd4;
-  border-color: #00bcd4;
+  background-color: #e05f00;
+  border-color: #e05f00;
 }
 
 .instruction-screen__btn--continue:disabled {

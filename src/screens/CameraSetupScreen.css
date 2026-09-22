@@ -228,16 +228,17 @@
 }
 
 .camera-setup-screen__btn--continue {
-  background-color: var(--color-accent-cyan);
+  background-color: var(--color-accent-orange);
   color: var(--color-bg-primary);
-  border-color: var(--color-accent-cyan);
+  border-color: var(--color-accent-orange);
+  box-shadow: var(--glow-orange);
   width: 100%;
   margin-top: var(--spacing-sm);
 }
 
 .camera-setup-screen__btn--continue:hover {
-  background-color: #33ecff;
-  border-color: #33ecff;
+  background-color: #ff8524;
+  border-color: #ff8524;
 }
 
 /* ─── Privacy Notice ─────────────────────────────────────────────────── */

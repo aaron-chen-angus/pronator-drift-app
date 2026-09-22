@@ -1,0 +1,142 @@
+Instructions for Kiro for TRON Design for all SMILE Apps
+==========================================================
+
+SMILE — TRON/BlazePod Theme Retrofit Brief (for Kiro)
+
+Goal: Restyle this app's visual appearance ONLY, to match the SMILE "TRON / Virtual
+BlazePod" aesthetic. Do not change any functionality, logic, data flow, layout
+structure, IDs, or behaviour. This is a cosmetic layer only.
+
+
+1. Non-negotiable rules
+-----------------------
+- Change only presentation: colors, fonts, borders, glows, backgrounds, spacing
+  that's purely visual. Do NOT rename variables/IDs, alter control flow, change
+  function signatures, touch data reads/writes, or modify computations.
+- Do not remove or reorder any existing logic. If a style change would require a
+  structural change, stop and ask me first.
+- Keep all class names / element IDs identical so existing code keeps working.
+- After changes, the app must run and behave exactly as before — only the look differs.
+- Read the whole file(s) before editing. Make targeted edits, not rewrites.
+
+
+2. Design tokens (use these exact values)
+------------------------------------------
+Background:        #050810   (deep space black)
+Background 2:      #0a0f1e
+Surface / panel:   #0d1526
+Surface 2:         #111d35
+Neon orange:       #ff6b00   (primary action / emphasis)
+Neon cyan:         #00e5ff   (secondary / accents, headings)
+Success green:     #00e676
+Warning yellow:    #ffcc00
+Danger red:        #ff3333
+Text:              #e8eaf0
+Muted text:        #6b7a99
+Hairline borders:  rgba(0,229,255,0.18)
+Grid lines:        rgba(0,229,255,0.07)
+Orange glow:       0 0 12px rgba(255,107,0,0.6), 0 0 30px rgba(255,107,0,0.25)
+Cyan glow:         0 0 12px rgba(0,229,255,0.5), 0 0 28px rgba(0,229,255,0.2)
+
+Fonts (Google Fonts):
+  Headings/labels/buttons: "Orbitron" (weights 400,700,900) — uppercase, letter-spacing ~0.08em
+  Body/UI:                 "Exo 2"    (weights 300,400,600,700)
+
+
+3. What the aesthetic looks like (apply consistently)
+-----------------------------------------------------
+- Deep black canvas with a faint cyan 40px grid behind content (decorative,
+  pointer-events:none).
+- Orbitron for the app title, section/box headers, KPI numbers, button labels,
+  table headers — uppercase, letter-spaced, with a subtle glow (orange for primary
+  emphasis, cyan for secondary).
+- Exo 2 for all body text, inputs, descriptions.
+- Cards/panels: dark surface (#0d1526), thin cyan hairline border, an orange
+  top-accent line, and a soft glow shadow.
+- Primary buttons: solid orange with orange glow; secondary buttons: transparent
+  with cyan border + cyan glow.
+- Inputs: dark surface, cyan hairline border, orange focus ring
+  (box-shadow: 0 0 0 2px rgba(255,107,0,0.25)).
+- Status semantics: symmetric/OK = green, warning = yellow/orange, error/danger = red
+  (dark translucent background + colored border, e.g. disclaimer bars use
+  rgba(58,0,0,0.85) bg + #ff3333 border).
+
+
+4. Load the fonts
+-----------------
+Add to the document head (HTML apps) or the app's head section:
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+
+5. Charts / plots
+-----------------
+- Retint plot colors to the palette (cyan + orange as the two primary series;
+  green/red/muted for semantic states).
+- Give plots dark/transparent backgrounds so they sit on the dark cards; grid lines
+  cyan-tinted; axis/label text in muted/light colors.
+- Do NOT change any plotting logic, data, axes meaning, or which chart shows what —
+  only colors, fonts, gridline colors, and background.
+
+
+6. R Shiny–specific mandatory safeguard (READ THIS — it caused a real outage)
+-----------------------------------------------------------------------------
+If the app is R Shiny and loads plotly, DT, or jsonlite (directly or transitively),
+you MUST add this immediately after the library() calls, before any other code:
+
+# NAMESPACE SAFETY (do not remove):
+# plotly/DT pull in jsonlite, whose validate()/need-adjacent exports can mask
+# shiny::validate on the search path depending on load order, breaking every
+# validate(need(...)) guard with "is.character(txt) is not TRUE" or
+# "unused argument (need(...))". Pin them to shiny explicitly.
+validate <- shiny::validate
+need     <- shiny::need
+
+Also, when styling plotly layout(): do not set a custom font family containing
+spaces/commas (e.g. "Exo 2, sans-serif") — it can trigger schema errors. Set only
+font = list(color = ...) and use solid hex backgrounds (paper_bgcolor/plot_bgcolor),
+not the CSS font family, inside plotly.
+
+Signature of this bug if it ever appears: errors reading is.character(txt) is not TRUE
+or unused argument (need(...)) on every chart at once. The fix is always the namespace
+pin above — not the colors.
+
+
+7. Desktop-specific notes (these two apps are desktop, not phone)
+-----------------------------------------------------------------
+- Remove/ignore any phone-only rules like "rotate to portrait" overlays or mobile
+  viewport locks; don't add mobile-only constraints.
+- Assume larger screens: allow wider max-widths, multi-column layouts, and hover
+  states (hover glows are fine on desktop).
+- Keep the same responsive behaviour the app already has — just restyle it. Don't
+  introduce a mobile lock.
+
+
+8. Verification before you call it done
+----------------------------------------
+- Run/launch the app and click through every screen/tab — confirm nothing errors and
+  all features still work.
+- Confirm charts/tables render (not just that the app starts).
+- If R Shiny: confirm no is.character(txt) / unused argument errors — if present,
+  apply the §6 pin.
+- Clean up any temp files. Report exactly which files you changed and confirm no
+  functional code was altered.
+- If anything requires a functional change to achieve the look, stop and ask me first.
+
+
+A couple of tips for you when you use this
+-------------------------------------------
+- Tell Kiro the app's tech stack up front (e.g. "this is an Electron/HTML+CSS desktop
+  app" or "this is an R Shiny desktop app"), and point it at the main style/entry files.
+  Kiro themes fastest when it knows where the styling lives.
+- For the two desktop apps: if either is also R Shiny, §6 is mandatory — that's the
+  exact issue we hit. If they're plain HTML/CSS/JS desktop apps (like Electron), §6
+  doesn't apply and it's purely §2–§5, which is lower-risk.
+- Ask Kiro to show you the list of changed files and to confirm "no functional code
+  changed" at the end — that's your quick trust check.
+- One honest caveat: this brief encodes what worked for the PLR apps. The other apps
+  may have their own quirks (different chart libraries, different frameworks), so
+  expect Kiro may need to adapt §5/§6 to whatever those apps actually use — the tokens
+  in §2 and the rules in §1 are the parts that stay fixed.

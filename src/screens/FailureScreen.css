@@ -130,19 +130,20 @@
 }
 
 .failure-screen__btn--primary {
-  background-color: var(--color-accent-cyan);
+  background-color: var(--color-accent-orange);
   color: var(--color-bg-primary);
-  border-color: var(--color-accent-cyan);
+  box-shadow: var(--glow-orange);
+  border-color: var(--color-accent-orange);
 }
 
 .failure-screen__btn--primary:hover {
-  background-color: #33ecff;
-  border-color: #33ecff;
+  background-color: #ff8524;
+  border-color: #ff8524;
 }
 
 .failure-screen__btn--primary:active {
-  background-color: #00bcd4;
-  border-color: #00bcd4;
+  background-color: #e05f00;
+  border-color: #e05f00;
 }
 
 .failure-screen__btn--secondary {
